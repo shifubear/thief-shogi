@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shogi } from 'shogi.js';
+import { Shogi, Piece } from 'shogi.js';
 import './App.css';
 
 import { Board } from './Board';
@@ -23,7 +23,8 @@ class App extends React.Component{
    */
    parse_csa_move(csa_string) {
     let letter_to_num = { "a": 1, "b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g": 7, "h": 8, "i": 9 }
-    let start_x = Number(csa_string[0]);
+    let drop = csa_string[1] === "*" ? true : false;
+    let start_x = drop ? csa_string[0] : Number(csa_string[0]);
     let start_y = Number(letter_to_num[csa_string[1]]); 
     let end_x = Number(csa_string[2]); 
     let end_y = Number(letter_to_num[csa_string[3]]); 
@@ -32,6 +33,7 @@ class App extends React.Component{
     let move = {
       from: [start_x, start_y], 
       to: [end_x, end_y],
+      drop: drop,
       promote: promote
     }
 
@@ -39,7 +41,22 @@ class App extends React.Component{
   }
 
   make_move(move) {
-    this.shogi.move(move["from"][0], move["from"][1], move["to"][0], move["to"][1], move["promote"]);
+    console.log(move);
+    const kind = {
+      P: "FU",
+      L: "KY", 
+      N: "KE",
+      S: "GI",
+      G: "KI",
+      B: "KA",
+      R: "HI",
+      K: "OU",
+    }
+    if (move["drop"]) {
+      this.shogi.drop(move["to"][0], move["to"][1], kind[move["from"][0]]);
+    } else {
+      this.shogi.move(move["from"][0], move["from"][1], move["to"][0], move["to"][1], move["promote"]);
+    }
   }
 
   move_back() {
@@ -52,6 +69,10 @@ class App extends React.Component{
   }
 
   move_forward() {
+    if (this.game.moves.length < this.move) {
+      return;
+    }
+    
     if (this.sfen_history.length <= this.move + 1) {
       this.make_move(this.parse_csa_move(this.game["moves"][this.move]));
       this.sfen_history.push(this.shogi.toSFENString());
